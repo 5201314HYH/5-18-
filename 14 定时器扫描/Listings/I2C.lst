@@ -1,0 +1,116 @@
+C51 COMPILER V9.54   I2C                                                                   05/15/2022 15:26:27 PAGE 1   
+
+
+C51 COMPILER V9.54, COMPILATION OF MODULE I2C
+OBJECT MODULE PLACED IN .\Objects\I2C.obj
+COMPILER INVOKED BY: E:\51\keil\C51\BIN\C51.EXE I2C.c OPTIMIZE(8,SPEED) BROWSE DEBUG OBJECTEXTEND PRINT(.\Listings\I2C.l
+                    -st) TABS(2) OBJECT(.\Objects\I2C.obj)
+
+line level    source
+
+   1          
+   2          #include <REGX52.H>
+   3          #include "Tools.h"
+*** WARNING C318 IN LINE 3 OF I2C.c: can't open file 'Tools.h'
+   4          
+   5          sbit I2C_SCL=P2^1;
+   6          sbit I2C_SDA=P2^0;
+   7          
+   8          void I2C_Start() //起始条件
+   9          {
+  10   1        //起始条件：SCL高电平期间，SDA从高电平切换到低电平
+  11   1        I2C_SDA=1;   //在结束应答位之后可能是0或1，确保SDA是从高电平到低电平，置1
+  12   1        I2C_SCL=1;   //SCL高电平期间
+  13   1        I2C_SDA=0;   //切换到低电平
+  14   1        I2C_SCL=0;   
+  15   1      }
+  16          
+  17          void I2C_Stop()  //终止条件
+  18          {
+  19   1        //终止条件：SCL高电平期间，SDA从低电平切换到高电平
+  20   1        I2C_SDA=0;   //拉低，确保能够产生上升沿
+  21   1        I2C_SCL=1;
+  22   1        I2C_SDA=1;   //产生上升沿
+  23   1        //I2C_SCL，I2C_SDA操作结束后均为高电平，符合空闲状态标准
+  24   1      }
+  25          
+  26          void I2C_SendByte(unsigned char Byte)  //发送一个字节
+  27          {
+  28   1        /*
+  29   1        发送一个字节：SCL低电平期间，主机将数据位依次放到SDA线上（高位在前）
+  30   1        然后拉高SCL，从机将在SCL高电平期间读取数据位
+  31   1        所以SCL高电平期间SDA不允许有数据变化，依次循环上述过程8次，即可发送一个字节
+  32   1        */
+  33   1        //I2C_Start()已将SCL置0
+  34   1        unsigned char i;
+  35   1        for(i=0;i<8;i++)
+  36   1        {
+  37   2          I2C_SDA=Byte & (0x80>>i);  //（高位在前）
+  38   2          I2C_SCL=1;   //然后拉高SCL
+  39   2          I2C_SCL=0;   //拉低电平，放数据     
+  40   2        }
+  41   1      }
+  42          
+  43          unsigned char I2C_ReceiveByte()  //接收一个字节
+  44          {
+  45   1        /*（主机在接收之前，需要释放SDA）
+  46   1        接收一个字节：SCL低电平期间，从机将数据位依次放到SDA线上（高位在前）
+  47   1        然后拉高SCL，主机将在SCL高电平期间读取数据位
+  48   1        所以SCL高电平期间SDA不允许有数据变化，依次循环上述过程8次
+  49   1        即可接收一个字节（主机在接收之前，需要释放SDA）
+  50   1        */
+  51   1        unsigned char Byte=0x00,i;
+  52   1        I2C_SDA=1;  //释放SDA,将控制权给从机
+  53   1        for(i=0;i<8;i++)
+C51 COMPILER V9.54   I2C                                                                   05/15/2022 15:26:27 PAGE 2   
+
+  54   1        {
+  55   2          I2C_SCL=1;    //主机将在SCL高电平期间读取数据位
+  56   2          if(I2C_SDA) {Byte|=(0x80>>i);}
+  57   2          I2C_SCL=0;    //SCL低电平期间，从机将数据位依次放到SDA线上，所以SDA可能是0或1
+  58   2        }
+  59   1        return Byte;
+  60   1      }
+  61          
+  62          void I2C_SendACK(unsigned char ACK)  //发送应答
+  63          {
+  64   1        /*发送应答：在接收完一个字节之后，主机在下一个时钟发送一位数据
+  65   1        数据0表示应答，数据1表示非应答*/
+  66   1        //发送应答相当于发送一个字节：SCL低电平期间，主机/从机将数据位依次放到SDA线上（高位在前）
+  67   1        //然后拉高SCL，从机将在SCL高电平期间读取数据位
+  68   1        
+  69   1        //每个函数结束后都将I2C_SCL拉低了
+  70   1        I2C_SDA=ACK;//SCL低电平期间，主机/从机将数据位依次放到SDA线
+  71   1        I2C_SCL=1;    //然后拉高SCL，从机将在SCL高电平期间读取数据位
+  72   1        I2C_SCL=0; 
+  73   1      }
+  74          
+  75          unsigned char I2C_ReceiveACK()  //接收应答
+  76          {
+  77   1        /*（主机在接收之前，需要释放SDA）
+  78   1        接收应答：在发送完一个字节之后，主机在下一个时钟接收一位数据
+  79   1        判断从机是否应答，数据0表示应答，数据1表示非应答*/
+  80   1        /*相当于接收一个字节：SCL低电平期间，从机将数据位依次放到SDA线上（高位在前）
+  81   1        然后拉高SCL，主机将在SCL高电平期间读取数据位*/
+  82   1        unsigned char ACK;
+  83   1        I2C_SDA=1;   //释放SDA控制权，由主机/从机控制SDA
+  84   1        I2C_SCL=1;   //在SCL高电平期间读取数据位
+  85   1        ACK=I2C_SDA;    
+  86   1        I2C_SCL=0;   //恢复
+  87   1        return ACK;
+  88   1      }
+  89          
+
+
+MODULE INFORMATION:   STATIC OVERLAYABLE
+   CODE SIZE        =    109    ----
+   CONSTANT SIZE    =   ----    ----
+   XDATA SIZE       =   ----    ----
+   PDATA SIZE       =   ----    ----
+   DATA SIZE        =   ----    ----
+   IDATA SIZE       =   ----    ----
+   BIT SIZE         =   ----    ----
+END OF MODULE INFORMATION.
+
+
+C51 COMPILATION COMPLETE.  1 WARNING(S),  0 ERROR(S)

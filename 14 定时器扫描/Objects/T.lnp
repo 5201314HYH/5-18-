@@ -1,0 +1,8 @@
+".\Objects\Delay.obj",
+".\Objects\Key.obj",
+".\Objects\main.obj",
+".\Objects\MatrixKey.obj",
+".\Objects\Nixie.obj",
+".\Objects\Timer.obj" 
+TO ".\Objects\T" 
+PRINT(".\Listings\T.m51") RAMSIZE(256) 
