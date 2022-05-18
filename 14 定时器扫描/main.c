@@ -5,24 +5,24 @@
 #include "Nixie.h"
 #include "Timer.h"
 #include "AT24C02.h"
-unsigned char i;   //ÊıÂë¹ÜÏÔÊ¾
-unsigned char WriteNum,index;   //±£´æÓÃ
+unsigned char i;   //æ•°ç ç®¡æ˜¾ç¤º
+unsigned char WriteNum,index;   //ä¿å­˜ç”¨
 unsigned char keyNum;  
-unsigned char RunFlag;      //ÔİÍ£
-unsigned char Min,Sec,Msel;   //Ê±¼ä 
-void ShowTime();   //ÏÔÊ¾Ê±¼ä
-void UpdateTime();    //¸üĞÂÊ±¼ä
+unsigned char RunFlag;      //æš‚åœ
+unsigned char Min,Sec,Msel;   //æ—¶é—´ 
+void ShowTime();   //æ˜¾ç¤ºæ—¶é—´
+void UpdateTime();    //æ›´æ–°æ—¶é—´
 void main()
 {
 	Timer0_Init();
 	while(1)
 	{
 		keyNum=Key();
-		if(keyNum)  //Èç¹ûÓĞ°´¼ü°´ÏÂ
+		if(keyNum)  //å¦‚æœæœ‰æŒ‰é”®æŒ‰ä¸‹
 		{
-			if(keyNum==1){	RunFlag=!RunFlag;	}   //1ÔİÍ£
-			if(keyNum==2){	Min=0;Sec=0;Msel=0;RunFlag=0;}   //2¹éÁã
-			if(keyNum==3 && RunFlag==0)   //3±£´æ
+			if(keyNum==1){	RunFlag=!RunFlag;	}   //1æš‚åœ
+			if(keyNum==2){	Min=0;Sec=0;Msel=0;RunFlag=0;}   //2å½’é›¶
+			if(keyNum==3 && RunFlag==0)   //3ä¿å­˜
 			{	
 				AT24C02_WriteByte(3,Min);
 				Delay(5);
@@ -32,32 +32,32 @@ void main()
 				Delay(5);
 			}
 			} 
-			if(keyNum==4 && RunFlag==0)   //4¶Á³ö
+			if(keyNum==4 && RunFlag==0)   //4è¯»å‡º
 			{	
 				Min=AT24C02_ReadByte(3);
 				Sec=AT24C02_ReadByte(4);
 				Msel=AT24C02_ReadByte(5);
 			}  
-		ShowTime();   //ÏÔÊ¾Ê±¼ä
+		ShowTime();   //æ˜¾ç¤ºæ—¶é—´
 	}
 }
-//Ê±¼ä¼ÆÊ±ÓÃ
+//æ—¶é—´è®¡æ—¶ç”¨
 void Timer0_Routine() interrupt 1  //INT0->T0->INT1->T1->UART
 {
 	static unsigned int count1=0,count2=0,count3=0;
 	TH0=(65535-921)/256;
 	TL0=(65535-921)/256;
 	
-	if(count1++==10)  //É¨Ãè°´¼ü
+	if(count1++==10)  //æ‰«ææŒ‰é”®
 	{
 		count1=0;
 		KeyTime();
 	}
-	if(count2++==2)    //É¨ÃèÊıÂë¹Ü
+	if(count2++==2)    //æ‰«ææ•°ç ç®¡
 	{
 		count2=0;
 		Nixie_Time();  
-		//Ä¬ÈÏÉ¨ÃèÏÔÊ¾¿Õ£¬Í¨¹ı¸ü¸ÄÏÔÊ¾À´ÏÔÊ¾Êı×Ö
+		//é»˜è®¤æ‰«ææ˜¾ç¤ºç©ºï¼Œé€šè¿‡æ›´æ”¹æ˜¾ç¤ºæ¥æ˜¾ç¤ºæ•°å­—
 	}
 	if(count3++>=10)
 	{
@@ -67,9 +67,9 @@ void Timer0_Routine() interrupt 1  //INT0->T0->INT1->T1->UART
 	
 }
 
-void ShowTime()   //ÏÔÊ¾Ê±¼ä
+void ShowTime()   //æ˜¾ç¤ºæ—¶é—´
 {
-		//¸ü¸ÄÉ¨ÃèÏÔÊ¾
+		//æ›´æ”¹æ‰«ææ˜¾ç¤º
 		Nixie_SetScan(1,Min/10);
 		Nixie_SetScan(2,Min%10);
 		Nixie_SetScan(3,12);
@@ -80,7 +80,7 @@ void ShowTime()   //ÏÔÊ¾Ê±¼ä
 		Nixie_SetScan(8,Msel%10);
 }	
 
-void UpdateTime()    //¸üĞÂÊ±¼ä
+void UpdateTime()    //æ›´æ–°æ—¶é—´
 {
 	if(RunFlag)   
 	{
@@ -101,41 +101,4 @@ void UpdateTime()    //¸üĞÂÊ±¼ä
 		}
 	}//RunFlag
 }
-//void save_time()    //±£´æÊ±¼äºÍÏÔÊ¾Ê±¼äº¯Êı
-//{
-//		if(t1==2)  //°´2±£´æµ±Ç°¼ÇÂ¼
-//		{
-//			i=3;
-//			do
-//			{
-//				i--;
-//				mArr[i+1]=mArr[i];
-//				sArr[i+1]=sArr[i];
-//				msArr[i+1]=msArr[i];
-//			}while(i);
-//			i=0;
-//			mArr[0]=m;
-//			sArr[0]=s;
-//			msArr[0]=ms;
-//		}
-//		if(t1==3 && stop==0)   //ÔİÍ£ºó°´3ÏÔÊ¾×î½ü4Ìõ¼ÇÂ¼
-//		{
-//			while(t1!=4)
-//			{
-//				 t1=Key(); //ÔÚÑ­»·ÖĞ»ñÈ¡ĞÅºÅ
-//				 mtest=MatrixKey();
-//				 if(mtest>=1 && mtest<=4)
-//					 i=mtest-1;
-//	       Nixie(8,i);
-//	       Nixie(index+2,10);  //Ğ¡Êıµã
-//	       Nixie(index+0,10);
-//	       
-//	       Nixie(index+3,msArr[i]);
-//	       Nixie(index+2,sArr[i]%10);
-//	       Nixie(index+1,sArr[i]/10);
-//	       Nixie(index+0,mArr[i]%10);
-//	       Nixie(index-1,mArr[i]/10);
-//			}
-//		}
-//}
 
